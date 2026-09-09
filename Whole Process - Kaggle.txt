@@ -1,0 +1,106 @@
+GitHub mein code + selection files push
+git status
+git add -f .
+git commit -m "Update hotel project"
+git push
+
+-------------
+
+
+2. Kaggle — NEW SESSION START
+Cell 1 — GitHub clone
+
+!rm -rf /kaggle/working/resorts
+!git clone https://github.com/Syed1mukram/resorts.git /kaggle/working/resorts
+%cd /kaggle/working/resorts
+
+----------------
+
+3. Kaggle — dependencies
+
+
+Ye har fresh session mein chala dena. Already installed hua toh bhi generally koi problem nahi:
+
+%cd /kaggle/working/resorts
+
+!pip install -q moviepy openai-whisper transformers sentence-transformers pillow requests beautifulsoup4 lxml
+
+----------------
+
+4. Real-ESRGAN install
+
+%cd /kaggle/working/resorts
+
+!test -d Real-ESRGAN || git clone --depth 1 https://github.com/xinntao/Real-ESRGAN.git
+
+%cd Real-ESRGAN
+!pip install -q -e .
+%cd /kaggle/working/resorts
+
+
+Phir compatibility fix:
+
+!sed -i 's/from torchvision.transforms.functional_tensor import rgb_to_grayscale/from torchvision.transforms.functional import rgb_to_grayscale/' /usr/local/lib/python3.12/site-packages/basicsr/data/degradations.py
+
+
+------------
+
+Agar No such file aaye toh ignore mat karna — us case mein:
+
+!python -c "import basicsr; print(basicsr.__file__)"
+
+------------
+
+se path milega. Lekin abhi jo setup mein chal gaya tha, normally upar wala path kaam karega.
+
+5. Kaggle — files check
+
+%cd /kaggle/working/resorts
+
+!ls input/images/1/voice.mp3
+!ls input/images/1/images/intro.jpg
+!ls input/images/1/title.txt
+
+
+Aur:
+
+!ls input/images/1/images | head
+
+--------------
+
+
+6. Image selection
+
+Har fresh session mein selection files nahi honge toh ye run karo:
+
+%cd /kaggle/working/resorts
+!python select_images.py
+
+Complete hone par:
+
+!ls selected_images_*.txt
+
+Expected:
+
+selected_images_1.txt
+selected_images_2.txt
+...
+selected_images_10.txt
+
+
+----------
+
+7. Full upscale + render
+
+Ab final full process:
+
+%cd /kaggle/working/resorts
+!python process_selected.py
+
+----------
+
+Ye automatically:
+
+selected images → Real-ESRGAN upscale → render images prepare → 10 hotels render → final videos
+
+karega.
