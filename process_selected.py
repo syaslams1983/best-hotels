@@ -37,12 +37,30 @@ def get_selected_images(hotel_number):
     selected = []
     seen = set()
 
-    for line in selection_file.read_text(encoding="utf-8").splitlines():
-        name = line.strip()
-        if not name:
+    for raw_line in selection_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+
+        # Expected select_images.py output:
+        # 01 | intro.jpg | score=1.000 | 0.00-3.00 | text...
+        parts = [p.strip() for p in line.split("|")]
+
+        if len(parts) < 2:
             continue
+
+        # First column must be a numeric sequence number.
+        if not parts[0].isdigit():
+            continue
+
+        name = parts[1]
+
+        # Accept only actual image filenames.
+        if Path(name).suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+            continue
+
+        # Never feed already-upscaled files back into Real-ESRGAN.
         if Path(name).stem.endswith("_out"):
             continue
+
         if name not in seen:
             seen.add(name)
             selected.append(name)
