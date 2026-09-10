@@ -1,163 +1,176 @@
+
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
+from select_images import select_hotel
 from src.timeline_builder import TimelineBuilder
 from src.renderer import Renderer
-from select_images import select_hotel
+from src.transcript import TranscriptGenerator
 
 BASE_DIR = Path("input/images")
-SELECTED_PREFIX = "selected_images_"
+REALESRGAN_SCRIPT = Path("/kaggle/working/Real-ESRGAN/inference_realesrgan.py")
 
-IMAGE_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".webp", ".avif", ".bmp",
-}
+_TRANSCRIPT_CACHE = {}
+_ORIGINAL_TRANSCRIBE = TranscriptGenerator.transcribe
+
+
+def _cached_transcribe(self, audio_file):
+    key = str(Path(audio_file).resolve())
+    if key in _TRANSCRIPT_CACHE:
+        print(f"[Transcript] Reusing cached transcript: {audio_file}")
+        return _TRANSCRIPT_CACHE[key]
+
+    segments = _ORIGINAL_TRANSCRIBE(self, audio_file)
+    _TRANSCRIPT_CACHE[key] = segments
+    return segments
+
+
+TranscriptGenerator.transcribe = _cached_transcribe
+
 
 def get_selected_images(hotel_number):
-    selected_file = Path(f"{SELECTED_PREFIX}{hotel_number}.txt")
-    if not selected_file.exists():
-        raise RuntimeError(f"Missing selection file: {selected_file}")
+    selection_file = Path(f"selected_images_{hotel_number}.txt")
+    if not selection_file.exists():
+        return []
 
-    images = []
-    for line in selected_file.read_text(encoding="utf-8").splitlines():
-        parts = line.split("|")
-        if len(parts) < 2:
+    selected = []
+    seen = set()
+
+    for line in selection_file.read_text(encoding="utf-8").splitlines():
+        name = line.strip()
+        if not name:
             continue
-        filename = parts[1].strip()
-        if Path(filename).suffix.lower() not in IMAGE_EXTENSIONS:
+        if Path(name).stem.endswith("_out"):
             continue
-        images.append(filename)
-    return images
+        if name not in seen:
+            seen.add(name)
+            selected.append(name)
 
-def upscale_hotel(hotel_dir, selected_images):
-    source_dir = hotel_dir / "images"
-    work_dir = hotel_dir / "selected_upscaled"
-    work_dir.mkdir(parents=True, exist_ok=True)
+    return selected
 
-    print("\n----------------------------------------")
+
+def upscale_hotel(hotel_dir, selected):
+    images_dir = hotel_dir / "images"
+    upscaled_dir = hotel_dir / "selected_upscaled"
+    upscaled_dir.mkdir(parents=True, exist_ok=True)
+
+    print("\n" + "-" * 40)
     print(f"Upscaling Hotel {hotel_dir.name}")
-    print("----------------------------------------")
+    print("-" * 40)
 
-    for filename in selected_images:
-        source = source_dir / filename
-        output = work_dir / f"{Path(filename).stem}_out{Path(filename).suffix}"
+    for filename in selected:
+        src = images_dir / filename
 
-        if not source.exists():
-            print(f"[Missing] {filename}")
+        if not src.exists():
+            print(f"[Skip missing] {filename}")
             continue
-        if output.exists():
-            print(f"[Skip] {filename}")
+
+        expected_output = upscaled_dir / f"{Path(filename).stem}_out{Path(filename).suffix}"
+
+        if expected_output.exists():
+            print(f"[Skip already upscaled] {expected_output.name}")
             continue
 
         print(f"[Upscale] {filename}")
 
-        command = [
+        cmd = [
             sys.executable,
-            "/kaggle/working/Real-ESRGAN/inference_realesrgan.py",
+            str(REALESRGAN_SCRIPT),
             "-n", "RealESRGAN_x4plus",
-            "-i", str(source),
-            "-o", str(work_dir),
+            "-i", str(src),
+            "-o", str(upscaled_dir),
         ]
-        subprocess.run(command, check=True)
 
-    return work_dir
+        result = subprocess.run(cmd)
 
-def prepare_render_images(hotel_dir, upscaled_dir):
-    images_dir = hotel_dir / "images"
-    backup_dir = hotel_dir / "original_images_backup"
-    backup_dir.mkdir(parents=True, exist_ok=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Real-ESRGAN failed for Hotel {hotel_dir.name}: {filename}"
+            )
 
-    print("\nPreparing render images...")
+    return upscaled_dir
 
-    for image in images_dir.iterdir():
-        if image.is_file() and image.suffix.lower() in IMAGE_EXTENSIONS:
-            backup = backup_dir / image.name
-            if not backup.exists():
-                shutil.copy2(image, backup)
-
-    for image in images_dir.iterdir():
-        if image.is_file() and image.suffix.lower() in IMAGE_EXTENSIONS:
-            image.unlink()
-
-    for image in upscaled_dir.iterdir():
-        if image.is_file() and image.suffix.lower() in IMAGE_EXTENSIONS:
-            shutil.copy2(image, images_dir / image.name)
-            print(f"[Render] {image.name}")
 
 def render_hotel(hotel_dir, output_dir):
-    hotel_number = hotel_dir.name
     audio_file = hotel_dir / "voice.mp3"
-    images_dir = hotel_dir / "images"
+    images_dir = hotel_dir / "selected_upscaled"
+    output_file = output_dir / f"hotel_{hotel_dir.name}.mp4"
 
-    if not audio_file.exists():
-        print(f"[Skip] Hotel {hotel_number}: voice.mp3 missing")
-        return
-
-    print("\n========================================")
-    print(f"RENDERING HOTEL {hotel_number}")
-    print("========================================")
+    print("\n" + "-" * 40)
+    print(f"Rendering Hotel {hotel_dir.name}")
+    print("-" * 40)
 
     builder = TimelineBuilder(
         audio_file=audio_file,
         images_dir=images_dir,
     )
-    timeline = builder.build()
 
-    output_file = output_dir / f"hotel_{hotel_number}.mp4"
+    timeline = builder.build()
 
     renderer = Renderer()
     renderer.render(
         timeline=timeline,
         audio_file=audio_file,
         output_file=output_file,
-        hotel_number=int(hotel_number),
+        hotel_number=hotel_dir.name,
     )
 
-    print(f"[INFO] Hotel #{hotel_number} saved : {output_file}")
+    print(f"[DONE] {output_file}")
+
 
 def main():
+    start_hotel = int(sys.argv[1]) if len(sys.argv) > 1 else 3
+
     hotels = [
         folder for folder in BASE_DIR.iterdir()
-        if folder.is_dir() and folder.name.isdigit()
+        if folder.is_dir()
+        and folder.name.isdigit()
+        and int(folder.name) >= start_hotel
     ]
     hotels.sort(key=lambda p: int(p.name))
-
-    if not hotels:
-        raise RuntimeError("No hotel folders found.")
 
     output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for hotel_dir in hotels:
+        output_file = output_dir / f"hotel_{hotel_dir.name}.mp4"
+
+        if output_file.exists():
+            print(f"[Skip] Hotel {hotel_dir.name} already rendered")
+            continue
+
         print("\n" + "=" * 60)
         print(f"STARTING HOTEL {hotel_dir.name}")
         print("=" * 60)
 
-        # 1) Whisper transcript + image selection for this hotel only.
+        audio_key = str((hotel_dir / "voice.mp3").resolve())
+        _TRANSCRIPT_CACHE.pop(audio_key, None)
+
+        # Whisper runs here once.
         select_hotel(hotel_dir)
 
-        # 2) Read this hotel's fresh selection.
         selected = get_selected_images(hotel_dir.name)
-        print(f"\nHotel {hotel_dir.name}: {len(selected)} selected images")
+        print(f"\nHotel {hotel_dir.name}: {len(selected)} selected original images")
 
         if not selected:
             print(f"[Skip] No selected images for Hotel {hotel_dir.name}")
             continue
 
-        # 3) Upscale only this hotel's selected images.
-        upscaled_dir = upscale_hotel(hotel_dir, selected)
+        # Upscale originals only.
+        upscale_hotel(hotel_dir, selected)
 
-        # 4) Prepare and render this hotel before moving to the next.
-        prepare_render_images(hotel_dir, upscaled_dir)
+        # TimelineBuilder reuses cached transcript here.
         render_hotel(hotel_dir, output_dir)
 
-        print(f"\nHotel {hotel_dir.name} COMPLETE")
+        _TRANSCRIPT_CACHE.pop(audio_key, None)
+
+        print("\n" + "=" * 60)
+        print(f"HOTEL {hotel_dir.name} COMPLETE")
         print("=" * 60)
 
-    print("\n" + "=" * 60)
-    print("ALL HOTELS COMPLETE")
-    print("=" * 60)
+    print("\nALL REQUESTED HOTELS COMPLETE")
+
 
 if __name__ == "__main__":
     main()
