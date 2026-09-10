@@ -40,7 +40,7 @@ def upscale_hotel(hotel_dir, selected_images):
 
     for filename in selected_images:
         source = source_dir / filename
-        output = work_dir / filename
+        output = work_dir / f"{Path(filename).stem}_out{Path(filename).suffix}"
 
         if not source.exists():
             print(f"[Missing] {filename}")
@@ -53,7 +53,7 @@ def upscale_hotel(hotel_dir, selected_images):
 
         command = [
             sys.executable,
-            "Real-ESRGAN/inference_realesrgan.py",
+            "/kaggle/working/Real-ESRGAN/inference_realesrgan.py",
             "-n", "RealESRGAN_x4plus",
             "-i", str(source),
             "-o", str(work_dir),
@@ -125,6 +125,9 @@ def main():
     if not hotels:
         raise RuntimeError("No hotel folders found.")
 
+    output_dir = Path("output")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     for hotel_dir in hotels:
         selected = get_selected_images(hotel_dir.name)
         print(f"\nHotel {hotel_dir.name}: {len(selected)} selected images")
@@ -135,17 +138,10 @@ def main():
 
         upscaled_dir = upscale_hotel(hotel_dir, selected)
         prepare_render_images(hotel_dir, upscaled_dir)
-
-    print("\n========================================")
-    print("UPSCALING COMPLETE")
-    print("Starting automatic render...")
-    print("========================================\n")
-
-    output_dir = Path("output")
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    for hotel_dir in hotels:
         render_hotel(hotel_dir, output_dir)
+
+        print(f"\nHotel {hotel_dir.name} COMPLETE")
+        print("========================================")
 
     print("\n========================================")
     print("ALL HOTELS COMPLETE")
