@@ -5,6 +5,7 @@ import sys
 
 from src.timeline_builder import TimelineBuilder
 from src.renderer import Renderer
+from select_images import select_hotel
 
 BASE_DIR = Path("input/images")
 SELECTED_PREFIX = "selected_images_"
@@ -129,6 +130,14 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for hotel_dir in hotels:
+        print("\n" + "=" * 60)
+        print(f"STARTING HOTEL {hotel_dir.name}")
+        print("=" * 60)
+
+        # 1) Whisper transcript + image selection for this hotel only.
+        select_hotel(hotel_dir)
+
+        # 2) Read this hotel's fresh selection.
         selected = get_selected_images(hotel_dir.name)
         print(f"\nHotel {hotel_dir.name}: {len(selected)} selected images")
 
@@ -136,16 +145,19 @@ def main():
             print(f"[Skip] No selected images for Hotel {hotel_dir.name}")
             continue
 
+        # 3) Upscale only this hotel's selected images.
         upscaled_dir = upscale_hotel(hotel_dir, selected)
+
+        # 4) Prepare and render this hotel before moving to the next.
         prepare_render_images(hotel_dir, upscaled_dir)
         render_hotel(hotel_dir, output_dir)
 
         print(f"\nHotel {hotel_dir.name} COMPLETE")
-        print("========================================")
+        print("=" * 60)
 
-    print("\n========================================")
+    print("\n" + "=" * 60)
     print("ALL HOTELS COMPLETE")
-    print("========================================")
+    print("=" * 60)
 
 if __name__ == "__main__":
     main()
