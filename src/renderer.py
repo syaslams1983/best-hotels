@@ -85,6 +85,7 @@ class Renderer:
         audio_file,
         output_file,
         hotel_number=None,
+        test_duration=None,
     ):
 
         self._clean()
