@@ -1,10 +1,11 @@
-1|The Havannah Vanuatu
-2|Tamanu on the Beach
-3|Erakor Island Resort & Spa
-4|Nasama Resort
-5|Warwick Le Lagon – Vanuatu
-6|Iririki Island Resort & Spa
-7|Holiday Inn Resort Vanuatu by IHG
-8|Breakas Beach Resort – Adults Only
-9|Mangoes Resort
-10|Hideaway Island Resort
+1|BANYAN TREE KUALA LUMPUR
+2|W KUALA LUMPUR
+3|FOUR SEASONS HOTEL KUALA LUMPUR
+4|MANDARIN ORIENTAL, KUALA LUMPUR
+5|EQ KUALA LUMPUR
+6|GRAND HYATT KUALA LUMPUR
+7|SHANGRI-LA KUALA LUMPUR
+8|THE RUMA HOTEL AND RESIDENCES
+9|THE ST. REGIS KUALA LUMPUR
+10|TRADERS HOTEL KUALA LUMPUR
+11|JW MARRIOTT KUALA LUMPUR
