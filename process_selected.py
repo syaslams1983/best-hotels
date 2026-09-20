@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from select_images import select_hotel
 from src.timeline_builder import TimelineBuilder
@@ -74,8 +75,10 @@ def upscale_hotel(hotel_dir, selected):
     upscaled_dir.mkdir(parents=True, exist_ok=True)
 
     print("\n" + "-" * 40)
-    print(f"Upscaling Hotel {hotel_dir.name}")
+    print(f"Upscaling Hotel {hotel_dir.name} with 2 GPUs")
     print("-" * 40)
+
+    jobs = []
 
     for filename in selected:
         src = images_dir / filename
@@ -90,22 +93,62 @@ def upscale_hotel(hotel_dir, selected):
             print(f"[Skip already upscaled] {expected_output.name}")
             continue
 
-        print(f"[Upscale] {filename}")
+        jobs.append((filename, src))
 
-        cmd = [
-            sys.executable,
-            str(REALESRGAN_SCRIPT),
-            "-n", "RealESRGAN_x4plus",
-            "-i", str(src),
-            "-o", str(upscaled_dir),
-        ]
+    if not jobs:
+        print("[Upscale] Nothing new to upscale")
+        return upscaled_dir
 
-        result = subprocess.run(cmd)
+    # One worker per T4. Each worker launches its own Real-ESRGAN process
+    # and is pinned to a different CUDA GPU.
+    def gpu_worker(gpu_id, gpu_jobs):
+        completed = []
 
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"Real-ESRGAN failed for Hotel {hotel_dir.name}: {filename}"
-            )
+        for filename, src in gpu_jobs:
+            print(f"[GPU {gpu_id}] Upscale START: {filename}", flush=True)
+
+            cmd = [
+                sys.executable,
+                str(REALESRGAN_SCRIPT),
+                "-n", "RealESRGAN_x4plus",
+                "-i", str(src),
+                "-o", str(upscaled_dir),
+                "-g", str(gpu_id),
+            ]
+
+            result = subprocess.run(cmd)
+
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"Real-ESRGAN failed on GPU {gpu_id} "
+                    f"for Hotel {hotel_dir.name}: {filename}"
+                )
+
+            print(f"[GPU {gpu_id}] Upscale DONE: {filename}", flush=True)
+            completed.append(filename)
+
+        return completed
+
+    # Split selected images approximately evenly between the two T4s.
+    gpu0_jobs = jobs[0::2]
+    gpu1_jobs = jobs[1::2]
+
+    print(f"[Dual GPU] GPU 0: {len(gpu0_jobs)} images")
+    print(f"[Dual GPU] GPU 1: {len(gpu1_jobs)} images")
+
+    futures = []
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        if gpu0_jobs:
+            futures.append(executor.submit(gpu_worker, 0, gpu0_jobs))
+
+        if gpu1_jobs:
+            futures.append(executor.submit(gpu_worker, 1, gpu1_jobs))
+
+        for future in as_completed(futures):
+            future.result()
+
+    print(f"[Dual GPU] Hotel {hotel_dir.name} upscaling complete")
 
     return upscaled_dir
 
