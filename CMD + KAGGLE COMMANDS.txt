@@ -1,0 +1,37 @@
+cd /d "E:\resorts Best"
+git add .
+git commit -m "New hotel"
+git push origin main
+
+---
+
+%cd /kaggle/working
+!rm -rf best-hotels
+!git clone --depth 1 https://github.com/syaslams1983/best-hotels.git
+%cd /kaggle/working/best-hotels
+
+---
+
+
+import os
+from kaggle_secrets import UserSecretsClient
+
+os.environ["PEXELS_API_KEY"] = UserSecretsClient().get_secret("pexels api")
+print("PEXELS KEY LOADED:", bool(os.environ["PEXELS_API_KEY"]))
+
+
+---
+
+!python -u process_selected.py 1
+
+----
+
+
+ZIP DOWNLOAD COMMAND
+
+%cd /kaggle/working/best-hotels
+
+!rm -f /kaggle/working/all_hotels_videos.zip
+!zip -j /kaggle/working/all_hotels_videos.zip output/*.mp4
+
+!ls -lh /kaggle/working/all_hotels_videos.zip

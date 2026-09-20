@@ -1,11 +1,11 @@
-1|BANYAN TREE KUALA LUMPUR
-2|W KUALA LUMPUR
-3|FOUR SEASONS HOTEL KUALA LUMPUR
-4|MANDARIN ORIENTAL, KUALA LUMPUR
-5|EQ KUALA LUMPUR
-6|GRAND HYATT KUALA LUMPUR
-7|SHANGRI-LA KUALA LUMPUR
-8|THE RUMA HOTEL AND RESIDENCES
-9|THE ST. REGIS KUALA LUMPUR
-10|TRADERS HOTEL KUALA LUMPUR
-11|JW MARRIOTT KUALA LUMPUR
+1|Mandarin Oriental, Muscat
+2The St. Regis Al Mouj Muscat Resort
+3|Jumeirah Muscat Bay
+4|The Chedi Muscat
+5|Al Bustan Palace, a Ritz-Carlton Hotel
+6|Grand Hyatt Muscat
+7|Kempinski Hotel Muscat
+8|W Muscat
+9|Crowne Plaza Muscat
+10|InterContinental Muscat
+11|Sheraton Oman Hotel
