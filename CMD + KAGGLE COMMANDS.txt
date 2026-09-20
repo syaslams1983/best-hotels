@@ -12,15 +12,36 @@ git push origin main
 
 ---
 
+!pip install -q faster-whisper
 
-import os
-from kaggle_secrets import UserSecretsClient
+---
 
-os.environ["PEXELS_API_KEY"] = UserSecretsClient().get_secret("pexels api")
-print("PEXELS KEY LOADED:", bool(os.environ["PEXELS_API_KEY"]))
+
+%cd /kaggle/working/best-hotels
+!pip install -q faster-whisper open-clip-torch
+
+%cd /kaggle/working
+!rm -rf Real-ESRGAN
+!git clone https://github.com/xinntao/Real-ESRGAN.git
+
+%cd /kaggle/working/Real-ESRGAN
+!pip install -q basicsr facexlib gfpgan
+!pip install -q -r requirements.txt
+!python setup.py develop
+
+%cd /kaggle/working/best-hotels
+!python process_selected.py
 
 
 ---
+
+import os
+os.environ["PEXELS_API_KEY"] = "Vpg3M0hELXIesFVZo6ns6vMi24rF2ifyqXGkPfNJ3gpuftgLchvwXnpb"
+print("Pexels key loaded")
+
+
+----
+
 
 !python -u process_selected.py 1
 

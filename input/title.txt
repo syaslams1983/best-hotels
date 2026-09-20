@@ -1,11 +1,9 @@
-1|Mandarin Oriental, Muscat
-2The St. Regis Al Mouj Muscat Resort
-3|Jumeirah Muscat Bay
-4|The Chedi Muscat
-5|Al Bustan Palace, a Ritz-Carlton Hotel
-6|Grand Hyatt Muscat
-7|Kempinski Hotel Muscat
-8|W Muscat
-9|Crowne Plaza Muscat
-10|InterContinental Muscat
-11|Sheraton Oman Hotel
+1|Secrets Baby Beach Aruba
+2|Hotel Riu Palace Aruba
+3|Divi Aruba All Inclusive
+4|Hotel Riu Palace Antillas
+5|Barceló Aruba
+6|Tamarijn Aruba
+7|Manchebo Beach Resort and Spa
+8|Divi Village Golf & Beach Resort
+9|All Inclusive Holiday Inn Resort Aruba
