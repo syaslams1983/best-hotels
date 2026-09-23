@@ -1,9 +1,10 @@
-1|Secrets Baby Beach Aruba
-2|Hotel Riu Palace Aruba
-3|Divi Aruba All Inclusive
-4|Hotel Riu Palace Antillas
-5|Barceló Aruba
-6|Tamarijn Aruba
-7|Manchebo Beach Resort and Spa
-8|Divi Village Golf & Beach Resort
-9|All Inclusive Holiday Inn Resort Aruba
+1|The Oberoi, Lombok
+2|Pullman Lombok Merujani Mandalika Beach
+3|Novotel Lombok Resort and Villas
+4|Hotel Tugu Lombok
+5|Qunci Villas Resort
+6|Royal Avila Boutique Resort
+7|Katamaran Hotel & Resort Lombok
+8|Sheraton Senggigi Beach Resort
+9|Jeeva Klui Resort – Lombok
+10|Sudamala Resort, Senggigi

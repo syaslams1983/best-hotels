@@ -1,9 +1,17 @@
+WINDOWS + R  ---> cmd
+
+
 cd /d "E:\resorts Best"
 git add .
 git commit -m "New hotel"
 git push origin main
 
+
+cd /d "E:\resorts Best" && git add . && git commit -m "New hotel" && git push origin main
+
 ---
+
+KAGGLE COMMANDS
 
 %cd /kaggle/working
 !rm -rf best-hotels
@@ -12,26 +20,36 @@ git push origin main
 
 ---
 
-!pip install -q faster-whisper
+!pip install -q faster-whisper open-clip-torch
 
 ---
 
 
-%cd /kaggle/working/best-hotels
-!pip install -q faster-whisper open-clip-torch
-
 %cd /kaggle/working
 !rm -rf Real-ESRGAN
-!git clone https://github.com/xinntao/Real-ESRGAN.git
+!git clone --depth 1 https://github.com/xinntao/Real-ESRGAN.git
 
 %cd /kaggle/working/Real-ESRGAN
 !pip install -q basicsr facexlib gfpgan
 !pip install -q -r requirements.txt
 !python setup.py develop
 
-%cd /kaggle/working/best-hotels
-!python process_selected.py
+---
 
+from pathlib import Path
+
+p = Path("/usr/local/lib/python3.12/dist-packages/basicsr/data/degradations.py")
+
+text = p.read_text()
+
+text = text.replace(
+    "from torchvision.transforms.functional_tensor import rgb_to_grayscale",
+    "from torchvision.transforms.functional import rgb_to_grayscale"
+)
+
+p.write_text(text)
+
+print("BasicSR PATCHED")
 
 ---
 
@@ -43,6 +61,7 @@ print("Pexels key loaded")
 ----
 
 
+%cd /kaggle/working/best-hotels
 !python -u process_selected.py 1
 
 ----
@@ -56,3 +75,131 @@ ZIP DOWNLOAD COMMAND
 !zip -j /kaggle/working/all_hotels_videos.zip output/*.mp4
 
 !ls -lh /kaggle/working/all_hotels_videos.zip
+
+
+
+
+
+
+------------------
+
+
+import os
+import subprocess
+from pathlib import Path
+
+def run(cmd, cwd=None):
+    print(f"\n>>> {cmd}")
+    subprocess.run(cmd, shell=True, check=True, cwd=cwd)
+
+# =========================================================
+# 1. CLONE BEST-HOTELS
+# =========================================================
+
+run("rm -rf /kaggle/working/best-hotels")
+
+run(
+    "git clone --depth 1 "
+    "https://github.com/syaslams1983/best-hotels.git "
+    "/kaggle/working/best-hotels"
+)
+
+# =========================================================
+# 2. INSTALL PROJECT DEPENDENCIES
+# =========================================================
+
+run(
+    "pip install -q faster-whisper open-clip-torch",
+    cwd="/kaggle/working/best-hotels"
+)
+
+# =========================================================
+# 3. INSTALL REAL-ESRGAN
+# =========================================================
+
+run("rm -rf /kaggle/working/Real-ESRGAN")
+
+run(
+    "git clone --depth 1 "
+    "https://github.com/xinntao/Real-ESRGAN.git "
+    "/kaggle/working/Real-ESRGAN"
+)
+
+run(
+    "pip install -q basicsr facexlib gfpgan",
+    cwd="/kaggle/working/Real-ESRGAN"
+)
+
+run(
+    "pip install -q -r requirements.txt",
+    cwd="/kaggle/working/Real-ESRGAN"
+)
+
+run(
+    "python setup.py develop",
+    cwd="/kaggle/working/Real-ESRGAN"
+)
+
+# =========================================================
+# 4. FIX BASICSR + TORCHVISION COMPATIBILITY
+# =========================================================
+
+p = Path(
+    "/usr/local/lib/python3.12/dist-packages/"
+    "basicsr/data/degradations.py"
+)
+
+if not p.exists():
+    raise FileNotFoundError(f"BasicSR file not found: {p}")
+
+text = p.read_text()
+
+old = (
+    "from torchvision.transforms.functional_tensor "
+    "import rgb_to_grayscale"
+)
+
+new = (
+    "from torchvision.transforms.functional "
+    "import rgb_to_grayscale"
+)
+
+if old in text:
+    p.write_text(text.replace(old, new))
+    print("\nBasicSR PATCHED successfully.")
+elif new in text:
+    print("\nBasicSR already patched.")
+else:
+    raise RuntimeError(
+        "Could not find expected rgb_to_grayscale import."
+    )
+
+# =========================================================
+# 5. PEXELS API KEY
+# =========================================================
+
+os.environ["PEXELS_API_KEY"] = "Vpg3M0hELXIesFVZo6ns6vMi24rF2ifyqXGkPfNJ3gpuftgLchvwXnpb"
+
+print("Pexels key loaded.")
+
+# =========================================================
+# 6. FINAL CHECKS
+# =========================================================
+
+import open_clip
+from faster_whisper import WhisperModel
+from torchvision.transforms.functional import rgb_to_grayscale
+
+print("\n====================================")
+print("SETUP COMPLETE")
+print("faster-whisper : OK")
+print("open_clip      : OK")
+print("Real-ESRGAN    : OK")
+print("BasicSR patch  : OK")
+print("Pexels key     : LOADED")
+print("====================================")
+
+------xxxx------------
+
+%cd /kaggle/working/best-hotels
+!python -u process_selected.py 1
